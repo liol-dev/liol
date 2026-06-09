@@ -1,17 +1,57 @@
+/* ============================================================
+   GOOGLE FONTS
+   Importing both typefaces used across the LIOL site.
+   - Montserrat: primary sans-serif (UI, headings, nav, labels)
+   - Baskervville: accent serif (editorial copy, quotes, titles)
+   Full weight ranges loaded so font-weight utilities work freely.
+   Note: @imports must come before all other rules.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400..700;1,400..700&display=swap');
+
 @import "tailwindcss";
 
+/* ============================================================
+   THEME TOKENS
+   CSS custom properties for colors and fonts.
+   Tailwind 4 reads these via @theme to generate utility classes.
+   ============================================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── LIOL Brand Colors ──────────────────────────────────────
+     --liol-bg:      #141414  → page/section backgrounds
+     --liol-text:    #FFFFFF  → primary text, borders, icons
+     --liol-subtext: #898989  → subtext, disabled states, dividers
+  ──────────────────────────────────────────────────────────── */
+  --liol-bg:      #141414;
+  --liol-text:    #FFFFFF;
+  --liol-subtext: #898989;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ── LIOL Colors → Tailwind utilities ───────────────────────
+     bg-liol-bg          → #141414 backgrounds
+     text-liol-text      → #FFFFFF primary text, icons, borders
+     text-liol-subtext   → #898989 subtext, disabled, dividers
+     border-liol-text / border-liol-subtext follow the same pattern
+  ──────────────────────────────────────────────────────────── */
+  --color-liol-bg:      var(--liol-bg);
+  --color-liol-text:    var(--liol-text);
+  --color-liol-subtext: var(--liol-subtext);
+
+  /* ── Font families ──────────────────────────────────────────
+     Registers fonts as Tailwind utilities:
+       font-montserrat → Montserrat (sans-serif)
+       font-baskervville → Baskervville (serif)
+     Combine freely with weight utilities: font-bold, font-light, etc.
+  ──────────────────────────────────────────────────────────── */
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-baskervville: "Baskervville", serif;
 }
 
+/* ============================================================
+   COLOR SCHEME
+   Dark mode overrides via system preference.
+   ============================================================ */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,8 +59,12 @@
   }
 }
 
+/* ============================================================
+   BASE STYLES
+   Montserrat as the default body font since it's our primary face.
+   ============================================================ */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat);
 }
