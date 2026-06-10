@@ -1,3 +1,7 @@
+import PortfolioGrid from "./components/PortfolioGrid";
+import QuoteSection from "./components/QuoteSection";
+import CtaButton from "./components/CtaButton";
+
 export default function Home() {
   return (
     <main className="bg-liol-bg min-h-screen text-liol-text font-montserrat">
@@ -7,7 +11,7 @@ export default function Home() {
           On mobile: tighter text, button fills less width.
           On desktop: larger heading, wider button.
       ──────────────────────────────────────────────────────── */}
-      <section className="flex flex-col items-center justify-center text-center px-8 h-[calc(100vh-56px)]">
+      <section className="flex flex-col items-center justify-center text-center px-8 h-[calc(100vh-56px)] 3xl:h-[calc(100vh-64px)]">
 
         {/* Heading — "find" rendered in Baskervville italic as accent */}
         <h1 className="text-4xl md:text-6xl font-light tracking-[10%] leading-tight max-w-4xl">
@@ -21,13 +25,10 @@ export default function Home() {
           Life in Our Lens — portraits, couples, and engagements shot with intention
         </p>
 
-        {/* CTA Button */}
-        <a
-          href="/gallery"
-          className="mt-14 px-4 py-4 border border-liol-text text-liol-text font-extralight text-[1.25rem] hover:bg-liol-text hover:text-liol-bg duration-300"
-        >
+        {/* CTA Button — shared site-wide style */}
+        <CtaButton href="/gallery" className="mt-14">
           See Our Work
-        </a>
+        </CtaButton>
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 flex flex-col items-center gap-2">
@@ -36,6 +37,18 @@ export default function Home() {
         </div>
 
       </section>
+
+      {/* ── Portfolio Grid Section ───────────────────────────────
+          Masonry mosaic of recent work. Full-bleed on mobile,
+          padded multi-column grid on desktop.
+      ──────────────────────────────────────────────────────── */}
+      <PortfolioGrid />
+
+      {/* ── Quote Section ─────────────────────────────────────
+          Full-viewport Baskervville statement over a dimmed
+          photo, with attribution + shared CTA.
+      ──────────────────────────────────────────────────────── */}
+      <QuoteSection />
     </main>
   );
 }

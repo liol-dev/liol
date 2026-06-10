@@ -68,3 +68,46 @@ body {
   color: var(--foreground);
   font-family: var(--font-montserrat);
 }
+
+/* ============================================================
+   CUSTOM BREAKPOINTS
+   3xl — high-res displays (≥1920px). Use as `3xl:` for
+         targeted overrides on big screens.
+   xs  — small-device threshold (400px). Tailwind is mobile-
+         first, so for OLD/NARROW phones (Pixel 3 @ 393px,
+         iPhone SE @ 375px, Galaxy @ 360px) use the auto-
+         generated `max-xs:` variant — "apply BELOW 400px".
+   (rem in media queries always resolves against the initial
+   16px — not our scaled root — so these are fixed px values.)
+   ============================================================ */
+@theme {
+  --breakpoint-3xl: 120rem; /* 1920px */
+  --breakpoint-xs: 25rem;   /* 400px  */
+}
+
+/* ============================================================
+   GLOBAL SCALE-UP — ≥1920px
+   The whole site is sized in rem (Tailwind text/spacing/gap/
+   max-w utilities), so bumping the root font size scales ALL
+   of it proportionally — nav, links, buttons, quote, footer —
+   without per-element overrides. 16px → 18px = +12.5%.
+   Pixel-locked values (1px grid gap, arbitrary px rows) are
+   intentionally unaffected; those get explicit 3xl: overrides
+   where it matters.
+   ============================================================ */
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* ============================================================
+   ANIMATIONS
+   liol-fade-in → used by PortfolioGrid's crossfade rotation.
+   Referenced via inline style so duration stays configurable
+   from the component's FADE_DURATION_MS constant.
+   ============================================================ */
+@keyframes liol-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
