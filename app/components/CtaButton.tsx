@@ -18,7 +18,7 @@ export default function CtaButton({ href, children, className = "" }: CtaButtonP
   return (
     <Link
       href={href}
-      className={`px-4 py-4 border border-liol-text text-liol-text font-extralight text-[1.25rem] hover:bg-liol-text hover:text-liol-bg duration-300 ${className}`}
+      className={`inline-block px-4 py-4 border border-liol-text text-liol-text font-extralight text-[1.25rem] hover:bg-liol-text hover:text-liol-bg duration-300 ${className}`}
     >
       {children}
     </Link>

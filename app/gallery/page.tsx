@@ -1,5 +1,6 @@
 import PageHeader from "../components/PageHeader";
 import ScrollTopButton from "../components/ScrollTopButton";
+import ScrollRevealElement from "../components/motion/ScrollRevealElement";
 import GalleryFeed from "./GalleryFeed";
 
 // ============================================================
@@ -17,7 +18,23 @@ export default function GalleryPage() {
         title="The Work"
         subtitle="Every frame tells you something. Here's what we've been saying."
       />
-      <GalleryFeed />
+      {/* ⚠ OPACITY-ONLY on purpose: GalleryFeed contains a
+          position:sticky sidebar, and an animated transform on
+          an ancestor would turn this wrapper into its containing
+          block and kill the stickiness. No transform, no problem.
+          amount={0}: the feed is far taller than the viewport, so
+          any visibility threshold above zero would never trigger
+          and the feed would stay invisible (desktop bug, fixed). */}
+      <ScrollRevealElement
+        direction="opacity"
+        duration={0.7}
+        delay={0.3}
+        amount={0}
+        margin="0px"
+        useWillChange={false}
+      >
+        <GalleryFeed />
+      </ScrollRevealElement>
       <ScrollTopButton />
     </main>
   );

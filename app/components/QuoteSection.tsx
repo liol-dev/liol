@@ -1,4 +1,5 @@
 import CtaButton from "./CtaButton";
+import ScrollRevealElement from "./motion/ScrollRevealElement";
 
 // ============================================================
 // QUOTE SECTION COMPONENT
@@ -40,21 +41,27 @@ export default function QuoteSection() {
             with a slightly wider measure than max-w-5xl.
             max-xs: shrinks on narrow phones (<400px, e.g. Pixel 3)
             so the quote doesn't overwhelm small viewports. */}
-        <blockquote className="font-baskervville font-light max-xs:text-[2rem] text-[2.5rem] md:text-[3.4rem] leading-snug md:leading-snug max-w-7xl">
-          &ldquo;We shoot the people, places, and moments that actually
-          mean something with no forced poses, no cookie-cutter
-          backdrops. Just real life captured sharp.&rdquo;
-        </blockquote>
+        <ScrollRevealElement direction="up" duration={0.7}>
+          <blockquote className="font-baskervville font-light max-xs:text-[2rem] text-[2.5rem] md:text-[3.4rem] leading-snug md:leading-snug max-w-7xl">
+            &ldquo;We shoot the people, places, and moments that actually
+            mean something with no forced poses, no cookie-cutter
+            backdrops. Just real life captured sharp.&rdquo;
+          </blockquote>
+        </ScrollRevealElement>
 
         {/* Attribution — back to Montserrat, subdued */}
-        <p className="mt-12 font-montserrat text-base md:text-lg text-liol-subtext tracking-[10%]">
-          &mdash; Corey &amp; Ed
-        </p>
+        <ScrollRevealElement direction="up" distance={24} delay={0.2}>
+          <p className="mt-12 font-montserrat text-base md:text-lg text-liol-subtext tracking-[10%]">
+            &mdash; Corey &amp; Ed
+          </p>
+        </ScrollRevealElement>
 
         {/* Shared CTA — same button as the hero */}
-        <CtaButton href="/gallery" className="mt-14">
-          See Our Work
-        </CtaButton>
+        <ScrollRevealElement direction="up" distance={24} delay={0.35}>
+          <CtaButton href="/gallery" className="mt-14">
+            See Our Work
+          </CtaButton>
+        </ScrollRevealElement>
 
       </div>
     </section>

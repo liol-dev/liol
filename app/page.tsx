@@ -1,6 +1,8 @@
 import PortfolioGrid from "./components/PortfolioGrid";
 import QuoteSection from "./components/QuoteSection";
 import CtaButton from "./components/CtaButton";
+import MaskReveal from "./components/motion/MaskReveal";
+import ScrollRevealElement from "./components/motion/ScrollRevealElement";
 
 export default function Home() {
   return (
@@ -13,28 +15,44 @@ export default function Home() {
       ──────────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center justify-center text-center px-8 h-[calc(100vh-56px)] 3xl:h-[calc(100vh-64px)]">
 
-        {/* Heading — "find" rendered in Baskervville italic as accent */}
-        <h1 className="text-4xl md:text-6xl font-light tracking-[10%] leading-tight max-w-4xl">
-          We don&apos;t stage moments. We{" "}
-          <span className="italic">find</span>{" "}
-          them
-        </h1>
+        {/* Heading — "find" rendered in Baskervville italic as accent.
+            Rises out of a bottom mask on mount. */}
+        <MaskReveal orientation="vertical" from="bottom" duration={0.9}>
+          <h1 className="text-4xl md:text-6xl font-light tracking-[10%] leading-tight max-w-4xl">
+            We don&apos;t stage moments. We{" "}
+            <span className="italic">find</span>{" "}
+            them
+          </h1>
+        </MaskReveal>
 
-        {/* Subtext */}
-        <p className="mt-6 text-sm md:text-base text-liol-subtext max-w-md leading-relaxed">
-          Life in Our Lens — portraits, couples, and engagements shot with intention
-        </p>
+        {/* Subtext — trails the heading */}
+        <ScrollRevealElement direction="up" distance={20} delay={0.4}>
+          <p className="mt-6 text-sm md:text-base text-liol-subtext max-w-md leading-relaxed">
+            Life in Our Lens — portraits, couples, and engagements shot with intention
+          </p>
+        </ScrollRevealElement>
 
-        {/* CTA Button — shared site-wide style */}
-        <CtaButton href="/gallery" className="mt-14">
-          See Our Work
-        </CtaButton>
+        {/* CTA Button — shared site-wide style, last in the stagger */}
+        <ScrollRevealElement direction="up" distance={20} delay={0.6}>
+          <CtaButton href="/gallery" className="mt-14">
+            See Our Work
+          </CtaButton>
+        </ScrollRevealElement>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 flex flex-col items-center gap-2">
-          <span className="text-xs tracking-[0.3em] text-liol-subtext">SCROLL</span>
-          <div className="w-px h-10 bg-liol-subtext" />
-        </div>
+        {/* Scroll Indicator — opacity-only (the wrapper carries the
+            absolute positioning; a transform here would re-anchor it) */}
+        <ScrollRevealElement
+          direction="opacity"
+          delay={1.1}
+          duration={0.8}
+          useWillChange={false}
+          className="absolute bottom-8"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs tracking-[0.3em] text-liol-subtext">SCROLL</span>
+            <div className="w-px h-10 bg-liol-subtext" />
+          </div>
+        </ScrollRevealElement>
 
       </section>
 
