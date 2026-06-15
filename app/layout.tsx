@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import NavBar from "./components/NavBar";
-import Footer from "./components/Footer";
 
 export const metadata: Metadata = {
   title: "Life In Our Lens",
   description: "Portraits, couples, and engagements shot with intention.",
 };
+
+// ============================================================
+// ROOT LAYOUT — bare shell
+// Only html/body/globals live here. Public chrome (NavBar +
+// Footer) moved to app/(site)/layout.tsx so that app/admin/
+// can render its own dashboard chrome instead of inheriting
+// the public nav. (Nested layouts WRAP, they don't replace —
+// route groups are how segments opt out of shared chrome.)
+// ============================================================
 
 export default function RootLayout({
   children,
@@ -19,9 +26,7 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
-        <NavBar />
         {children}
-        <Footer />
       </body>
     </html>
   );

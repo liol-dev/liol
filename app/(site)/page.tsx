@@ -1,8 +1,8 @@
-import PortfolioGrid from "./components/PortfolioGrid";
-import QuoteSection from "./components/QuoteSection";
-import CtaButton from "./components/CtaButton";
-import MaskReveal from "./components/motion/MaskReveal";
-import ScrollRevealElement from "./components/motion/ScrollRevealElement";
+import PortfolioGrid from "@/app/components/PortfolioGrid";
+import QuoteSection from "@/app/components/QuoteSection";
+import CtaButton from "@/app/components/CtaButton";
+import MaskReveal from "@/app/components/motion/MaskReveal";
+import ScrollRevealElement from "@/app/components/motion/ScrollRevealElement";
 
 export default function Home() {
   return (

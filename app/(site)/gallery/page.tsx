@@ -1,6 +1,6 @@
-import PageHeader from "../components/PageHeader";
-import ScrollTopButton from "../components/ScrollTopButton";
-import ScrollRevealElement from "../components/motion/ScrollRevealElement";
+import PageHeader from "@/app/components/PageHeader";
+import ScrollTopButton from "@/app/components/ScrollTopButton";
+import ScrollRevealElement from "@/app/components/motion/ScrollRevealElement";
 import GalleryFeed from "./GalleryFeed";
 
 // ============================================================

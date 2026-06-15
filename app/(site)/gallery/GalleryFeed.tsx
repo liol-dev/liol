@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CATEGORIES, PHOTOS, type GalleryPhoto } from "./photos";
+import {
+  CATEGORIES,
+  PHOTOS,
+  formatPhotoDate,
+  type PhotoRecord,
+} from "@/app/lib/photos";
 
 // ============================================================
 // GALLERY FEED COMPONENT
@@ -34,8 +39,8 @@ function PhotoTile({
   photo,
   onSelect,
 }: {
-  photo: GalleryPhoto;
-  onSelect: (photo: GalleryPhoto) => void;
+  photo: PhotoRecord;
+  onSelect: (photo: PhotoRecord) => void;
 }) {
   return (
     <button
@@ -45,7 +50,7 @@ function PhotoTile({
     >
       <img
         src={photo.src}
-        alt={photo.name}
+        alt={photo.alt_text}
         loading="lazy"
         className="absolute inset-0 h-full w-full object-cover"
       />
@@ -57,7 +62,7 @@ function PhotoTile({
           {photo.name}
         </p>
         <p className="mt-1 md:mt-2 text-xs md:text-sm text-liol-subtext">
-          {photo.date}
+          {formatPhotoDate(photo.date_taken)}
         </p>
 
         {/* Corner arrow (↖) — hints the tile opens the lightbox */}
@@ -76,7 +81,7 @@ function PhotoTile({
 
 export default function GalleryFeed() {
   // Lightbox state — null means closed (shared by both trees)
-  const [selected, setSelected] = useState<GalleryPhoto | null>(null);
+  const [selected, setSelected] = useState<PhotoRecord | null>(null);
 
   // MOBILE: active filter — "all" or a category id
   const [filter, setFilter] = useState<string>("all");
@@ -177,7 +182,7 @@ export default function GalleryFeed() {
             don't visually "morph" between unrelated photos. */}
         <div key={filter} className="grid grid-cols-3 gap-0">
           {filteredPhotos.map((photo) => (
-            <PhotoTile key={photo.src} photo={photo} onSelect={setSelected} />
+            <PhotoTile key={photo.id} photo={photo} onSelect={setSelected} />
           ))}
         </div>
       </div>
@@ -204,7 +209,7 @@ export default function GalleryFeed() {
 
               <div className="grid grid-cols-3 gap-3">
                 {PHOTOS.filter((p) => p.category === cat.id).map((photo) => (
-                  <PhotoTile key={photo.src} photo={photo} onSelect={setSelected} />
+                  <PhotoTile key={photo.id} photo={photo} onSelect={setSelected} />
                 ))}
               </div>
             </section>
@@ -262,7 +267,7 @@ export default function GalleryFeed() {
           >
             <img
               src={selected.src}
-              alt={selected.name}
+              alt={selected.alt_text}
               className="max-h-[80vh] max-w-full object-contain"
             />
             <figcaption className="mt-5 text-center">
@@ -270,7 +275,7 @@ export default function GalleryFeed() {
                 {selected.name}
               </p>
               <p className="mt-1 text-sm text-liol-subtext">
-                {selected.date}
+                {formatPhotoDate(selected.date_taken)}
               </p>
             </figcaption>
           </figure>
