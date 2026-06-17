@@ -159,10 +159,13 @@ function CrossfadeImage({ src }: { src: string }) {
 // ============================================================
 // PORTFOLIO GRID
 // ============================================================
-export default function PortfolioGrid() {
+export default function PortfolioGrid({ pool }: { pool?: string[] }) {
+  // Fall back to the built-in Unsplash pool if no DB photos yet
+  const activePool = pool && pool.length >= SLOTS.length ? pool : POOL;
+
   // Which pool image each slot is currently showing
   const [images, setImages] = useState<string[]>(() =>
-    SLOTS.map((_, i) => POOL[i % POOL.length])
+    SLOTS.map((_, i) => activePool[i % activePool.length])
   );
 
   const nextPoolRef = useRef(SLOTS.length); // next pool image to use
@@ -188,8 +191,8 @@ export default function PortfolioGrid() {
       // ascending sweep, this guarantees a recycled image has
       // already left its old slot before reappearing in a new one.
       const start = nextPoolRef.current;
-      const batch = SLOTS.map((_, i) => POOL[(start + i) % POOL.length]);
-      nextPoolRef.current = (start + SLOTS.length) % POOL.length;
+      const batch = SLOTS.map((_, i) => activePool[(start + i) % activePool.length]);
+      nextPoolRef.current = (start + SLOTS.length) % activePool.length;
 
       // Preload the ENTIRE wave before the first fade starts,
       // so the stagger rhythm is driven purely by timers —

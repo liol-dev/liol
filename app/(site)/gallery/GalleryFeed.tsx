@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   CATEGORIES,
-  PHOTOS,
   formatPhotoDate,
   type PhotoRecord,
 } from "@/app/lib/photos";
@@ -79,7 +78,7 @@ function PhotoTile({
   );
 }
 
-export default function GalleryFeed() {
+export default function GalleryFeed({ photos }: { photos: PhotoRecord[] }) {
   // Lightbox state — null means closed (shared by both trees)
   const [selected, setSelected] = useState<PhotoRecord | null>(null);
 
@@ -146,8 +145,8 @@ export default function GalleryFeed() {
   // Mobile feed contents under the current filter
   const filteredPhotos =
     filter === "all"
-      ? PHOTOS
-      : PHOTOS.filter((p) => p.category === filter);
+      ? photos
+      : photos.filter((p) => p.category === filter);
 
   return (
     <>
@@ -208,7 +207,7 @@ export default function GalleryFeed() {
               </h2>
 
               <div className="grid grid-cols-3 gap-3">
-                {PHOTOS.filter((p) => p.category === cat.id).map((photo) => (
+                {photos.filter((p) => p.category === cat.id).map((photo) => (
                   <PhotoTile key={photo.id} photo={photo} onSelect={setSelected} />
                 ))}
               </div>

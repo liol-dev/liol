@@ -3,8 +3,12 @@ import QuoteSection from "@/app/components/QuoteSection";
 import CtaButton from "@/app/components/CtaButton";
 import MaskReveal from "@/app/components/motion/MaskReveal";
 import ScrollRevealElement from "@/app/components/motion/ScrollRevealElement";
+import { createClient } from "@/app/lib/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("photos").select("src");
+  const pool = data ? data.map((r) => r.src as string) : [];
   return (
     <main className="bg-liol-bg min-h-screen text-liol-text font-montserrat">
 
@@ -60,7 +64,7 @@ export default function Home() {
           Masonry mosaic of recent work. Full-bleed on mobile,
           padded multi-column grid on desktop.
       ──────────────────────────────────────────────────────── */}
-      <PortfolioGrid />
+      <PortfolioGrid pool={pool} />
 
       {/* ── Quote Section ─────────────────────────────────────
           Full-viewport Baskervville statement over a dimmed

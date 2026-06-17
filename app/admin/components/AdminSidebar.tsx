@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createClient } from "@/app/lib/supabase/client";
 
 // ============================================================
 // ADMIN SIDEBAR / MOBILE NAV
@@ -13,8 +14,7 @@ import { useEffect, useState } from "react";
 //   (fixed inset-0 z-50 bg-liol-bg/95 — same as public NavBar's
 //   mobile menu) with the nav links + Sign out.
 // usePathname drives the active highlight in both trees.
-// Sign out clears the stub session flag (see AdminGate) — it
-// will call supabase.auth.signOut() once real auth lands.
+// Sign out calls supabase.auth.signOut() and redirects to /admin/login.
 // ============================================================
 
 const NAV_ITEMS = [
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Exact match for /admin (otherwise it'd stay lit on every
@@ -45,11 +46,11 @@ export default function AdminSidebar() {
     };
   }, [menuOpen]);
 
-  const handleSignOut = () => {
-    // STUB — mirrors AdminGate's sessionStorage flag. Replace
-    // with supabase.auth.signOut() in the auth session.
-    sessionStorage.removeItem("liol-admin-unlocked");
-    window.location.href = "/admin";
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+    router.refresh();
   };
 
   return (

@@ -2,29 +2,31 @@ import PageHeader from "@/app/components/PageHeader";
 import ScrollTopButton from "@/app/components/ScrollTopButton";
 import ScrollRevealElement from "@/app/components/motion/ScrollRevealElement";
 import GalleryFeed from "./GalleryFeed";
+import { createClient } from "@/app/lib/supabase/server";
+import { PhotoRecord } from "@/app/lib/photos";
 
 // ============================================================
 // GALLERY PAGE — "The Work"
-// PageHeader (shared) + interactive GalleryFeed (category
-// sections, sticky sidebar, hover overlays, lightbox) +
-// ScrollTopButton (shared sticky back-to-top).
-// Photo data lives in ./photos.ts until ImageKit/Supabase.
+// Server Component — fetches photos from Supabase and passes
+// them down to the interactive GalleryFeed client component.
 // ============================================================
 
-export default function GalleryPage() {
+export default async function GalleryPage() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("photos")
+    .select("*")
+    .order("date_taken", { ascending: false });
+
+  const photos: PhotoRecord[] = error ? [] : (data as PhotoRecord[]);
+
   return (
     <main className="bg-liol-bg min-h-screen text-liol-text font-montserrat pb-24">
       <PageHeader
         title="The Work"
         subtitle="Every frame tells you something. Here's what we've been saying."
       />
-      {/* ⚠ OPACITY-ONLY on purpose: GalleryFeed contains a
-          position:sticky sidebar, and an animated transform on
-          an ancestor would turn this wrapper into its containing
-          block and kill the stickiness. No transform, no problem.
-          amount={0}: the feed is far taller than the viewport, so
-          any visibility threshold above zero would never trigger
-          and the feed would stay invisible (desktop bug, fixed). */}
       <ScrollRevealElement
         direction="opacity"
         duration={0.7}
@@ -33,7 +35,7 @@ export default function GalleryPage() {
         margin="0px"
         useWillChange={false}
       >
-        <GalleryFeed />
+        <GalleryFeed photos={photos} />
       </ScrollRevealElement>
       <ScrollTopButton />
     </main>

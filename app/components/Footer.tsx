@@ -77,7 +77,15 @@ export default function Footer() {
 
           {/* Center — site credit (always visible) */}
           <p className="text-xs text-liol-subtext font-light tracking-[10%] text-center">
-            Site by MARC MIANGO
+            Site by{" "}
+            <a
+              href="https://marcmiango.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-liol-text duration-300"
+            >
+              MARC MIANGO
+            </a>
           </p>
 
           {/* Right — copyright (desktop only; lives in the
