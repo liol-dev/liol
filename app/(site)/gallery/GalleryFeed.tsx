@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
   CATEGORIES,
@@ -34,12 +35,16 @@ import {
 
 // ── Shared photo tile ───────────────────────────────────────
 // Square on mobile (IG-style), 4:5 portrait cells on desktop.
+// `priority` preloads the handful of above-the-fold tiles so the
+// gallery's LCP lands fast; everything else lazy-loads on scroll.
 function PhotoTile({
   photo,
   onSelect,
+  priority = false,
 }: {
   photo: PhotoRecord;
   onSelect: (photo: PhotoRecord) => void;
+  priority?: boolean;
 }) {
   return (
     <button
@@ -47,11 +52,13 @@ function PhotoTile({
       aria-label={`View ${photo.name}`}
       className="group relative aspect-square md:aspect-4/5 overflow-hidden"
     >
-      <img
+      <Image
         src={photo.src}
         alt={photo.alt_text}
-        loading="lazy"
-        className="absolute inset-0 h-full w-full object-cover"
+        fill
+        sizes="(max-width: 768px) 33vw, 28vw"
+        priority={priority}
+        className="object-cover"
       />
 
       {/* Hover overlay — dark wash + metadata. Also shows on
@@ -180,8 +187,13 @@ export default function GalleryFeed({ photos }: { photos: PhotoRecord[] }) {
             key={filter} remounts the grid per filter so images
             don't visually "morph" between unrelated photos. */}
         <div key={filter} className="grid grid-cols-3 gap-0">
-          {filteredPhotos.map((photo) => (
-            <PhotoTile key={photo.id} photo={photo} onSelect={setSelected} />
+          {filteredPhotos.map((photo, i) => (
+            <PhotoTile
+              key={photo.id}
+              photo={photo}
+              onSelect={setSelected}
+              priority={i < 6}
+            />
           ))}
         </div>
       </div>
@@ -193,7 +205,7 @@ export default function GalleryFeed({ photos }: { photos: PhotoRecord[] }) {
 
         {/* Sectioned photo feed — every category always present */}
         <div className="w-[85%] flex flex-col gap-24">
-          {CATEGORIES.map((cat) => (
+          {CATEGORIES.map((cat, catIndex) => (
             <section
               key={cat.id}
               id={`gallery-${cat.id}`}
@@ -207,8 +219,15 @@ export default function GalleryFeed({ photos }: { photos: PhotoRecord[] }) {
               </h2>
 
               <div className="grid grid-cols-3 gap-3">
-                {photos.filter((p) => p.category === cat.id).map((photo) => (
-                  <PhotoTile key={photo.id} photo={photo} onSelect={setSelected} />
+                {photos.filter((p) => p.category === cat.id).map((photo, i) => (
+                  <PhotoTile
+                    key={photo.id}
+                    photo={photo}
+                    onSelect={setSelected}
+                    // Only the first row of the first section is
+                    // above the fold on desktop — preload just those.
+                    priority={catIndex === 0 && i < 3}
+                  />
                 ))}
               </div>
             </section>
@@ -262,13 +281,19 @@ export default function GalleryFeed({ photos }: { photos: PhotoRecord[] }) {
           {/* Enlarged photo + metadata */}
           <figure
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col items-center max-w-5xl"
+            className="flex flex-col items-center max-w-5xl w-full"
           >
-            <img
-              src={selected.src}
-              alt={selected.alt_text}
-              className="max-h-[80vh] max-w-full object-contain"
-            />
+            {/* fill needs a sized box: full figure width × 80vh.
+                object-contain keeps the photo's true ratio inside it. */}
+            <div className="relative w-full h-[80vh]">
+              <Image
+                src={selected.src}
+                alt={selected.alt_text}
+                fill
+                sizes="(max-width: 768px) 100vw, 80vw"
+                className="object-contain"
+              />
+            </div>
             <figcaption className="mt-5 text-center">
               <p className="text-lg md:text-xl font-light tracking-[10%]">
                 {selected.name}

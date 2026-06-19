@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
   CATEGORIES,
@@ -32,7 +33,7 @@ interface PhotoDetailModalProps {
   photo: PhotoRecord;
   onClose: () => void;
   onSave: (updated: PhotoRecord) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
 }
 
 export default function PhotoDetailModal({
@@ -52,6 +53,7 @@ export default function PhotoDetailModal({
 
   // ── Two-stage delete ──────────────────────────────────────
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Dirty check — Save only lights up when a field changed
   const isDirty =
@@ -90,12 +92,20 @@ export default function PhotoDetailModal({
     onSave({ ...photo, ...draft });
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirmingDelete) {
       setConfirmingDelete(true);
       return;
     }
-    onDelete(photo.id);
+    // Second click — run the (async) delete. Parent removes the CDN
+    // asset + DB row, then closes the modal on success. On failure
+    // it surfaces an error and we re-enable the button.
+    setIsDeleting(true);
+    try {
+      await onDelete(photo.id);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Shared field styles
@@ -119,11 +129,12 @@ export default function PhotoDetailModal({
 
         {/* ── Image — native ratio, contained, never cropped ── */}
         <div className="relative md:flex-1 bg-black/40 flex items-center justify-center rounded-t-xl md:rounded-l-xl md:rounded-tr-none min-h-[40vh] md:min-h-[70vh]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={photo.src}
             alt={photo.alt_text}
-            className="max-h-[40vh] md:max-h-[70vh] max-w-full object-contain"
+            fill
+            sizes="(max-width: 768px) 100vw, 60vw"
+            className="object-contain"
           />
 
           {/* Close — top-left over the image */}
@@ -234,9 +245,9 @@ export default function PhotoDetailModal({
           <div className="mt-auto pt-2 flex gap-2.5">
             <button
               onClick={handleSave}
-              disabled={!isDirty}
+              disabled={!isDirty || isDeleting}
               className={`flex-1 rounded-lg text-sm font-medium py-2.5 duration-200 ${
-                isDirty
+                isDirty && !isDeleting
                   ? "bg-liol-text text-liol-bg hover:bg-liol-text/85 cursor-pointer"
                   : "bg-liol-text/10 text-liol-subtext cursor-not-allowed"
               }`}
@@ -244,17 +255,24 @@ export default function PhotoDetailModal({
               {isDirty ? "Save changes" : "Saved"}
             </button>
 
-            {/* Two-stage delete — morphs in place, no second modal */}
+            {/* Two-stage delete — morphs in place, no second modal.
+                While the CDN + DB delete is in flight it shows a
+                spinner-free "Deleting…" and locks to prevent dupes. */}
             <button
               onClick={handleDelete}
+              disabled={isDeleting}
               aria-label={confirmingDelete ? "Confirm delete" : "Delete photo"}
-              className={`rounded-lg text-sm py-2.5 duration-200 cursor-pointer border ${
-                confirmingDelete
-                  ? "px-4 bg-red-500/15 border-red-400/50 text-red-300"
-                  : "px-3.5 bg-transparent border-liol-text/15 text-liol-subtext hover:text-red-300 hover:border-red-400/40"
+              className={`rounded-lg text-sm py-2.5 duration-200 border ${
+                isDeleting
+                  ? "px-4 bg-red-500/15 border-red-400/50 text-red-300 cursor-wait"
+                  : confirmingDelete
+                  ? "px-4 bg-red-500/15 border-red-400/50 text-red-300 cursor-pointer"
+                  : "px-3.5 bg-transparent border-liol-text/15 text-liol-subtext hover:text-red-300 hover:border-red-400/40 cursor-pointer"
               }`}
             >
-              {confirmingDelete ? (
+              {isDeleting ? (
+                "Deleting…"
+              ) : confirmingDelete ? (
                 "Confirm delete?"
               ) : (
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

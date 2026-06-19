@@ -26,6 +26,14 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
+        {/* Warm up the ImageKit CDN connection early. Rendered as
+            plain <link> tags (NOT inside a manual <head>) — React 19
+            hoists them into <head> deterministically, so server and
+            client agree. A literal <head> element here collides with
+            Next's own head management and triggers a hydration
+            mismatch that forces the whole tree to client-render. */}
+        <link rel="preconnect" href="https://ik.imagekit.io" />
+        <link rel="dns-prefetch" href="https://ik.imagekit.io" />
         {children}
       </body>
     </html>

@@ -17,6 +17,10 @@ import { createClient } from "@/app/lib/supabase/client";
 // optimistically — no full page reload needed. router.refresh()
 // re-syncs the server component data in the background so the
 // next navigation is always fresh.
+//
+// Deletes remove the ImageKit CDN asset BEFORE the DB row (via
+// /api/delete-photo) so nothing is orphaned. Single + bulk share
+// one deletePhotoEverywhere() core.
 // ============================================================
 
 export default function LibraryManager({
@@ -57,40 +61,39 @@ export default function LibraryManager({
     router.refresh();
   };
 
-  const handleDelete = async (id: string) => {
-    setError(null);
-    const target = photos.find((p) => p.id === id);
-
-    // Remove the CDN asset first. If this fails, we stop here
-    // rather than delete the DB row — keeps the gallery from
-    // pointing at a dead image. Rows with no fileId (legacy/
-    // seeded mock photos) skip straight to the DB delete.
-    if (target?.image_kit_file_id) {
-      try {
-        const res = await fetch("/api/delete-photo", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId: target.image_kit_file_id }),
-        });
-        if (!res.ok) {
-          setError("Could not remove the image from storage. Please try again.");
-          return;
-        }
-      } catch {
-        setError("Could not reach the server to remove the image. Please try again.");
-        return;
-      }
+  // ── Shared delete core ────────────────────────────────────
+  // Removes the CDN asset first (if the photo has an ImageKit
+  // fileId), then the DB row. Throws on either failure so callers
+  // can decide how to surface it. Seeded/legacy rows with no
+  // fileId skip straight to the DB delete.
+  const deletePhotoEverywhere = async (photo: PhotoRecord) => {
+    if (photo.image_kit_file_id) {
+      const res = await fetch("/api/delete-photo", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId: photo.image_kit_file_id }),
+      });
+      if (!res.ok) throw new Error("cdn");
     }
 
     const supabase = createClient();
+    const { error } = await supabase.from("photos").delete().eq("id", photo.id);
+    if (error) throw new Error("db");
+  };
 
-    const { error } = await supabase
-      .from("photos")
-      .delete()
-      .eq("id", id);
+  const handleDelete = async (id: string) => {
+    setError(null);
+    const target = photos.find((p) => p.id === id);
+    if (!target) return;
 
-    if (error) {
-      setError("Could not delete photo. Please try again.");
+    try {
+      await deletePhotoEverywhere(target);
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message === "cdn"
+          ? "Could not remove the image from storage. Please try again."
+          : "Could not delete photo. Please try again."
+      );
       return;
     }
 
@@ -100,13 +103,48 @@ export default function LibraryManager({
     router.refresh();
   };
 
+  const handleBulkDelete = async (ids: string[]) => {
+    setError(null);
+    const idSet = new Set(ids);
+    const targets = photos.filter((p) => idSet.has(p.id));
+
+    const succeeded: string[] = [];
+    let failedCount = 0;
+
+    // Sequential — gentle on the network, clean partial-failure story
+    for (const photo of targets) {
+      try {
+        await deletePhotoEverywhere(photo);
+        succeeded.push(photo.id);
+      } catch {
+        failedCount++;
+      }
+    }
+
+    if (succeeded.length > 0) {
+      const okSet = new Set(succeeded);
+      setPhotos((prev) => prev.filter((p) => !okSet.has(p.id)));
+      router.refresh();
+    }
+
+    if (failedCount > 0) {
+      setError(
+        `Couldn't delete ${failedCount} of ${targets.length} photos. The rest were removed.`
+      );
+    }
+  };
+
   return (
     <>
       {error && (
         <p role="alert" className="mb-4 text-sm text-red-400">{error}</p>
       )}
 
-      <PhotoLibrary photos={photos} onSelect={setSelected} />
+      <PhotoLibrary
+        photos={photos}
+        onSelect={setSelected}
+        onBulkDelete={handleBulkDelete}
+      />
 
       {selected && (
         <PhotoDetailModal

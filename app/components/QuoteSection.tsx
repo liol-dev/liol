@@ -1,3 +1,4 @@
+import Image from "next/image";
 import CtaButton from "./CtaButton";
 import ScrollRevealElement from "./motion/ScrollRevealElement";
 
@@ -19,12 +20,16 @@ export default function QuoteSection() {
 
       {/* ── Background photo ──────────────────────────────────
           Absolutely positioned behind the content (-z-10 via
-          stacking order: bg layers first, content after). */}
-      <img
+          stacking order: bg layers first, content after).
+          fill + sizes="100vw" lets Next serve a viewport-sized,
+          format-optimized version; decorative, so no priority. */}
+      <Image
         src="https://images.unsplash.com/photo-1433446787703-42d5bf446876?auto=format&fit=crop&w=1920&q=80"
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover"
+        fill
+        sizes="100vw"
+        className="object-cover"
       />
 
       {/* ── Dark overlay ──────────────────────────────────────

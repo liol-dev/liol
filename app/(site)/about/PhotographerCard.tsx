@@ -7,6 +7,8 @@
 // Desktop: card sits inside the two-column grid on /about.
 // ============================================================
 
+import Image from "next/image";
+
 interface PhotographerCardProps {
   name: string;
   initial: string;
@@ -31,14 +33,17 @@ export default function PhotographerCard({
 
       {/* Photo — full-bleed on mobile (no px), constrained by the
           column on desktop. Gray block stands in until we have
-          real imagery; swap the div for a real photo then. */}
-      <div className="w-full aspect-video bg-[#d9d9d9] overflow-hidden">
+          real imagery; swap the div for a real photo then.
+          fill + sizes: full width on mobile, ~half on the 2-col
+          desktop grid. */}
+      <div className="relative w-full aspect-video bg-[#d9d9d9] overflow-hidden">
         {imageSrc && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={imageSrc}
             alt={imageAlt ?? name}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
           />
         )}
       </div>

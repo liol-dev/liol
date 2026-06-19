@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import exifr from "exifr";
 import {
   upload,
@@ -447,8 +448,38 @@ export default function PhotoUploader() {
         </div>
       )}
 
-      {/* Action bar */}
-      {items.length > 0 && (
+      {/* Success banner — everything staged finished uploading.
+          Gives a clear "done, here's where they live" exit instead
+          of leaving Corey & Ed parked on a page of checkmarks. */}
+      {items.length > 0 && pending.length === 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-green-400/30 bg-green-500/5 px-4 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <svg className="w-5 h-5 text-green-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <p className="text-sm text-liol-text">
+              {doneCount} photo{doneCount === 1 ? "" : "s"} uploaded — live in the gallery now.
+            </p>
+          </div>
+          <div className="sm:ml-auto flex items-center gap-2.5">
+            <Link
+              href="/admin/library"
+              className="rounded-lg bg-liol-text text-liol-bg text-sm font-medium px-4 py-2 hover:bg-liol-text/85 duration-200"
+            >
+              View in library →
+            </Link>
+            <button
+              onClick={clearCompleted}
+              className="rounded-lg text-sm px-4 py-2 border border-liol-text/15 text-liol-subtext hover:text-liol-text hover:border-liol-text/30 duration-200 cursor-pointer"
+            >
+              Upload more
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action bar — while photos are still waiting to upload */}
+      {pending.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={handleUploadAll}

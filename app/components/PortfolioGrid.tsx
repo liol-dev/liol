@@ -27,10 +27,34 @@
 //
 // DATA — placeholder Unsplash pool for now. In production,
 //   feed POOL from ImageKit/Supabase; layout logic stays put.
+//
+// IMAGE OPTIMIZATION — why NOT next/image here:
+//   This grid preloads each wave's exact URLs (window.Image)
+//   BEFORE swapping them in, which is what makes the crossfade
+//   pop-in-free. next/image serves a rewritten optimizer URL
+//   (/_next/image?url=…), so the preloaded raw URL and the
+//   displayed URL wouldn't match — the preload would warm the
+//   wrong cache entry and the rotation would stutter. Instead we
+//   optimize at the CDN: sizedSrc() appends ImageKit transforms
+//   so the preloaded URL IS the displayed URL. Unsplash
+//   placeholders already carry ?w= sizing, so they pass through.
 // ============================================================
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+
+// Tile-appropriate delivery size. Largest tile (big = 2×2) is
+// ~660px CSS wide; 1000px covers it comfortably incl. some DPR
+// headroom without shipping full-res originals.
+const TILE_WIDTH = 1000;
+
+// Append ImageKit resize/quality transforms to a delivery URL.
+// No-op for non-ImageKit URLs (Unsplash already ships sized).
+function sizedSrc(url: string): string {
+  if (!url.includes("ik.imagekit.io")) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}tr=w-${TILE_WIDTH},q-70`;
+}
 
 // ── Tuning knobs ────────────────────────────────────────────
 const SHOW_DURATION_MS = 8000;  // rest time between waves (full mosaic on display)
@@ -131,8 +155,9 @@ function CrossfadeImage({ src }: { src: string }) {
     <div className="relative h-full w-full overflow-hidden transition-transform duration-500 group-hover:scale-[1.03]">
       {/* Old layer — sits underneath during the fade */}
       {previous && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={previous}
+          src={sizedSrc(previous)}
           alt=""
           aria-hidden
           className="absolute inset-0 h-full w-full object-cover"
@@ -140,9 +165,10 @@ function CrossfadeImage({ src }: { src: string }) {
       )}
       {/* Current layer — fades in over the old one.
           `key` forces a fresh element so the animation re-runs. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         key={current}
-        src={current}
+        src={sizedSrc(current)}
         alt="Life in Our Lens portfolio photograph"
         loading="lazy"
         className="absolute inset-0 h-full w-full object-cover"
@@ -174,13 +200,15 @@ export default function PortfolioGrid({ pool }: { pool?: string[] }) {
     let cancelled = false;
     const timers: number[] = [];
 
-    // Resolve once an image is cached (or errors — never stall a wave)
+    // Resolve once an image is cached (or errors — never stall a wave).
+    // Preload the SAME (sized) URL the tile will render, so the warm
+    // cache entry is a guaranteed hit when the swap happens.
     const preload = (src: string) =>
       new Promise<void>((resolve) => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => resolve();
         img.onerror = () => resolve();
-        img.src = src;
+        img.src = sizedSrc(src);
       });
 
     const runWave = async () => {

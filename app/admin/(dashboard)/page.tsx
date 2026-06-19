@@ -1,4 +1,5 @@
 import DonutChart from "../components/DonutChart";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase/server";
 import {
@@ -110,17 +111,19 @@ export default async function AdminOverviewPage() {
             <p className="mt-4 text-sm text-liol-subtext">No photos yet.</p>
           ) : (
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {recentUploads.map((photo) => (
+              {recentUploads.map((photo, i) => (
                 <figure
                   key={photo.id}
                   className="relative aspect-square overflow-hidden rounded-lg"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={photo.src}
                     alt={photo.alt_text}
-                    loading="lazy"
-                    className="absolute inset-0 h-full w-full object-cover"
+                    fill
+                    sizes="(max-width: 640px) 50vw, 200px"
+                    // Top row of the overview is above the fold
+                    priority={i < 3}
+                    className="object-cover"
                   />
                   <figcaption className="absolute inset-x-0 bottom-0 bg-liol-bg/70 px-2.5 py-1.5 text-[0.7rem] text-liol-text truncate">
                     {photo.name}

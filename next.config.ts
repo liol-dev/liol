@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+
+  // Remote hosts the Next <Image> optimizer is allowed to fetch +
+  // optimize. ImageKit is where real photos live; Unsplash covers
+  // the seeded placeholders until Corey & Ed upload their own.
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "ik.imagekit.io" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+    ],
+  },
 };
 
 export default nextConfig;
