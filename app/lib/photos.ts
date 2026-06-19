@@ -9,14 +9,17 @@
 //
 // Planned table:
 //   create table photos (
-//     id          uuid primary key default gen_random_uuid(),
-//     src         text not null,        -- ImageKit delivery URL
-//     name        text not null,
-//     category    text not null,        -- 'couples' | 'engagements' | 'portraits'
-//     date_taken  date not null,        -- editable (EXIF-prefilled on upload)
-//     created_at  timestamptz default now(),  -- IMMUTABLE upload date
-//     caption     text default '',
-//     alt_text    text default ''
+//     id                 uuid primary key default gen_random_uuid(),
+//     src                text not null,        -- ImageKit delivery URL
+//     name               text not null,
+//     category           text not null,        -- 'couples' | 'engagements' | 'portraits'
+//     date_taken         date not null,        -- editable (EXIF-prefilled on upload)
+//     created_at         timestamptz default now(),  -- IMMUTABLE upload date
+//     caption            text default '',
+//     alt_text           text default '',
+//     image_kit_file_id  text                  -- ImageKit fileId, used to delete the
+//                                               -- CDN asset when the row is deleted.
+//                                               -- Nullable: legacy/seeded rows won't have one.
 //   );
 //
 // Consumers (public gallery + admin) import ONLY from this
@@ -35,6 +38,7 @@ export interface PhotoRecord {
   created_at: string;  // ISO timestamp — immutable upload date
   caption: string;     // editable display caption
   alt_text: string;    // editable accessibility text
+  image_kit_file_id?: string | null; // ImageKit fileId — absent/null for legacy/seeded rows
 }
 
 // ── Categories ──────────────────────────────────────────────

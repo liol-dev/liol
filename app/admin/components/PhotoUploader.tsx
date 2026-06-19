@@ -198,7 +198,9 @@ export default function PhotoUploader() {
 
     if (!res.url) throw new Error("Upload succeeded but no URL was returned.");
 
-    // Insert metadata — id + created_at are DB-generated
+    // Insert metadata — id + created_at are DB-generated.
+    // image_kit_file_id lets the library manager delete the
+    // CDN asset later instead of just orphaning it.
     const supabase = createClient();
     const { error } = await supabase.from("photos").insert({
       src: res.url,
@@ -207,6 +209,7 @@ export default function PhotoUploader() {
       date_taken: item.date_taken,
       caption: item.caption,
       alt_text: item.alt_text,
+      image_kit_file_id: res.fileId,
     });
 
     if (error)

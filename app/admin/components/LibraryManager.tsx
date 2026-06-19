@@ -59,6 +59,29 @@ export default function LibraryManager({
 
   const handleDelete = async (id: string) => {
     setError(null);
+    const target = photos.find((p) => p.id === id);
+
+    // Remove the CDN asset first. If this fails, we stop here
+    // rather than delete the DB row — keeps the gallery from
+    // pointing at a dead image. Rows with no fileId (legacy/
+    // seeded mock photos) skip straight to the DB delete.
+    if (target?.image_kit_file_id) {
+      try {
+        const res = await fetch("/api/delete-photo", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId: target.image_kit_file_id }),
+        });
+        if (!res.ok) {
+          setError("Could not remove the image from storage. Please try again.");
+          return;
+        }
+      } catch {
+        setError("Could not reach the server to remove the image. Please try again.");
+        return;
+      }
+    }
+
     const supabase = createClient();
 
     const { error } = await supabase
