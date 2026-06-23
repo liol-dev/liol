@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PhotoLibrary from "./PhotoLibrary";
 import PhotoDetailModal from "./PhotoDetailModal";
-import { type PhotoRecord } from "@/app/lib/photos";
+import { type PhotoRecord, type CategoryRecord } from "@/app/lib/photos";
 import { createClient } from "@/app/lib/supabase/client";
 
 // ============================================================
 // LIBRARY MANAGER — state layer for browse → edit → delete
-// Owns the working photo list and which photo (if any) is open
-// in the detail modal. The page stays a server component; all
-// interactivity lives here.
+// Owns the working photo list, active modal photo, and the
+// dynamic category list (fetched once here, passed to both
+// PhotoLibrary and PhotoDetailModal so they stay in sync).
 //
 // Save/delete hit Supabase directly then update local state
 // optimistically — no full page reload needed. router.refresh()
@@ -33,6 +33,21 @@ export default function LibraryManager({
   const [selected, setSelected] = useState<PhotoRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Dynamic categories — fetched once, shared with PhotoLibrary
+  // and PhotoDetailModal so filter pills + category selects always
+  // reflect whatever Corey & Ed have configured in /admin/categories.
+  const [categories, setCategories] = useState<CategoryRecord[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data: CategoryRecord[]) => setCategories(data))
+      .catch(() => {
+        // Silent fail — UI degrades gracefully (no filter pills,
+        // empty category select) rather than breaking the library.
+      });
+  }, []);
+
   const handleSave = async (updated: PhotoRecord) => {
     setError(null);
     const supabase = createClient();
@@ -45,8 +60,6 @@ export default function LibraryManager({
         date_taken: updated.date_taken,
         caption:    updated.caption,
         alt_text:   updated.alt_text,
-        // src and created_at are intentionally excluded —
-        // src changes via the upload flow only; created_at is immutable
       })
       .eq("id", updated.id);
 
@@ -55,17 +68,12 @@ export default function LibraryManager({
       return;
     }
 
-    // Optimistic update — reflect the change immediately in the UI
     setPhotos((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     setSelected(null);
     router.refresh();
   };
 
   // ── Shared delete core ────────────────────────────────────
-  // Removes the CDN asset first (if the photo has an ImageKit
-  // fileId), then the DB row. Throws on either failure so callers
-  // can decide how to surface it. Seeded/legacy rows with no
-  // fileId skip straight to the DB delete.
   const deletePhotoEverywhere = async (photo: PhotoRecord) => {
     if (photo.image_kit_file_id) {
       const res = await fetch("/api/delete-photo", {
@@ -97,7 +105,6 @@ export default function LibraryManager({
       return;
     }
 
-    // Optimistic update — remove from local list immediately
     setPhotos((prev) => prev.filter((p) => p.id !== id));
     setSelected(null);
     router.refresh();
@@ -111,7 +118,6 @@ export default function LibraryManager({
     const succeeded: string[] = [];
     let failedCount = 0;
 
-    // Sequential — gentle on the network, clean partial-failure story
     for (const photo of targets) {
       try {
         await deletePhotoEverywhere(photo);
@@ -142,6 +148,7 @@ export default function LibraryManager({
 
       <PhotoLibrary
         photos={photos}
+        categories={categories}
         onSelect={setSelected}
         onBulkDelete={handleBulkDelete}
       />
@@ -149,6 +156,7 @@ export default function LibraryManager({
       {selected && (
         <PhotoDetailModal
           photo={selected}
+          categories={categories}
           onClose={() => setSelected(null)}
           onSave={handleSave}
           onDelete={handleDelete}
