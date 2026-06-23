@@ -12,7 +12,7 @@ import {
   ImageKitUploadNetworkError,
 } from "@imagekit/next";
 import { createClient } from "@/app/lib/supabase/client";
-import { CATEGORIES, type PhotoCategory } from "@/app/lib/photos";
+import type { PhotoCategory, CategoryRecord } from "@/app/lib/photos";
 
 // ============================================================
 // PHOTO UPLOADER — drag-and-drop -> ImageKit -> Supabase
@@ -31,6 +31,10 @@ import { CATEGORIES, type PhotoCategory } from "@/app/lib/photos";
 // Staged rows carry their own status + progress so the UI shows
 // exactly where each file is. router.refresh() re-syncs the
 // server-rendered library/overview once uploads land.
+//
+// Categories are loaded dynamically from /api/categories so
+// any new categories added in /admin/categories show up here
+// immediately without a redeploy.
 // ============================================================
 
 type Status = "idle" | "uploading" | "done" | "error";
@@ -77,6 +81,29 @@ export default function PhotoUploader() {
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Dynamic categories from /api/categories
+  const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Load categories on mount so the select always reflects what's in the DB
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data: CategoryRecord[]) => {
+        // Filter out miscellaneous — it's a fallback, not something
+        // Corey & Ed should manually assign photos to.
+        setCategories(data.filter((c) => c.slug !== "miscellaneous"));
+      })
+      .catch(() => {
+        // Silent fail — leaves categories empty; upload still works
+        // and the select will just have no options until refresh.
+      })
+      .finally(() => setCategoriesLoading(false));
+  }, []);
+
+  // Default category slug — first non-misc category once loaded
+  const defaultCategory = categories[0]?.slug ?? "";
+
   // Revoke every object URL on unmount (no preview leaks)
   useEffect(() => {
     return () => {
@@ -97,7 +124,7 @@ export default function PhotoUploader() {
       file,
       previewUrl: URL.createObjectURL(file),
       name: baseName(file.name),
-      category: "portraits",
+      category: defaultCategory,
       date_taken: todayISO(),
       caption: "",
       alt_text: "",
@@ -126,7 +153,7 @@ export default function PhotoUploader() {
         // No/unsupported EXIF — keep today's date as fallback
       }
     });
-  }, []);
+  }, [defaultCategory]);
 
   const updateItem = (localId: string, patch: Partial<StagedPhoto>) =>
     setItems((prev) =>
@@ -199,9 +226,6 @@ export default function PhotoUploader() {
 
     if (!res.url) throw new Error("Upload succeeded but no URL was returned.");
 
-    // Insert metadata — id + created_at are DB-generated.
-    // image_kit_file_id lets the library manager delete the
-    // CDN asset later instead of just orphaning it.
     const supabase = createClient();
     const { error } = await supabase.from("photos").insert({
       src: res.url,
@@ -223,7 +247,6 @@ export default function PhotoUploader() {
     setIsUploading(true);
     let anySucceeded = false;
 
-    // Sequential — clean progress, gentle on the network
     for (const item of items) {
       if (item.status === "done") continue;
       try {
@@ -244,7 +267,7 @@ export default function PhotoUploader() {
     }
 
     setIsUploading(false);
-    if (anySucceeded) router.refresh(); // re-sync library + overview
+    if (anySucceeded) router.refresh();
   };
 
   // Derived
@@ -259,33 +282,18 @@ export default function PhotoUploader() {
     <div className="flex flex-col gap-6">
       {/* Dropzone */}
       <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragActive(true);
-        }}
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
-        }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click(); }}
         className={`rounded-xl border border-dashed px-6 py-12 text-center cursor-pointer duration-200 ${
-          dragActive
-            ? "border-liol-text/40 bg-liol-text/5"
-            : "border-liol-text/15 hover:border-liol-text/30"
+          dragActive ? "border-liol-text/40 bg-liol-text/5" : "border-liol-text/15 hover:border-liol-text/30"
         }`}
       >
-        <svg
-          className="mx-auto w-8 h-8 text-liol-subtext"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.25"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg className="mx-auto w-8 h-8 text-liol-subtext" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
           <polyline points="17 8 12 3 7 8" />
           <line x1="12" y1="3" x2="12" y2="15" />
@@ -302,10 +310,7 @@ export default function PhotoUploader() {
           accept="image/*"
           multiple
           className="hidden"
-          onChange={(e) => {
-            if (e.target.files) addFiles(e.target.files);
-            e.target.value = ""; // allow re-selecting the same file
-          }}
+          onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
         />
       </div>
 
@@ -313,18 +318,11 @@ export default function PhotoUploader() {
       {items.length > 0 && (
         <div className="flex flex-col gap-4">
           {items.map((item) => (
-            <div
-              key={item.localId}
-              className="flex flex-col sm:flex-row gap-4 rounded-xl border border-liol-text/10 bg-liol-text/[0.02] p-4"
-            >
+            <div key={item.localId} className="flex flex-col sm:flex-row gap-4 rounded-xl border border-liol-text/10 bg-liol-text/[0.02] p-4">
               {/* Thumbnail */}
               <div className="relative sm:w-40 shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.previewUrl}
-                  alt={item.name || "Pending upload"}
-                  className="w-full aspect-[4/3] object-cover rounded-lg bg-black/30"
-                />
+                <img src={item.previewUrl} alt={item.name || "Pending upload"} className="w-full aspect-[4/3] object-cover rounded-lg bg-black/30" />
                 {item.status === "done" && (
                   <div className="absolute inset-0 rounded-lg bg-liol-bg/70 flex items-center justify-center">
                     <svg className="w-7 h-7 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -339,31 +337,27 @@ export default function PhotoUploader() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Name</label>
-                    <input
-                      type="text"
-                      value={item.name}
-                      disabled={item.status === "done"}
-                      onChange={(e) => updateItem(item.localId, { name: e.target.value })}
-                      className={inputCls}
-                    />
+                    <input type="text" value={item.name} disabled={item.status === "done"} onChange={(e) => updateItem(item.localId, { name: e.target.value })} className={inputCls} />
                   </div>
                   <div>
                     <label className={labelCls}>Category</label>
                     <select
                       value={item.category}
-                      disabled={item.status === "done"}
-                      onChange={(e) =>
-                        updateItem(item.localId, {
-                          category: e.target.value as PhotoCategory,
-                        })
-                      }
+                      disabled={item.status === "done" || categoriesLoading}
+                      onChange={(e) => updateItem(item.localId, { category: e.target.value as PhotoCategory })}
                       className={`${inputCls} cursor-pointer appearance-none`}
                     >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat.id} value={cat.id} className="bg-liol-bg">
-                          {cat.label}
-                        </option>
-                      ))}
+                      {categoriesLoading ? (
+                        <option value="">Loading…</option>
+                      ) : categories.length === 0 ? (
+                        <option value="">No categories — add one first</option>
+                      ) : (
+                        categories.map((cat) => (
+                          <option key={cat.id} value={cat.slug} className="bg-liol-bg">
+                            {cat.label}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                 </div>
@@ -371,41 +365,17 @@ export default function PhotoUploader() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Date taken</label>
-                    <input
-                      type="date"
-                      value={item.date_taken}
-                      disabled={item.status === "done"}
-                      onChange={(e) =>
-                        updateItem(item.localId, { date_taken: e.target.value })
-                      }
-                      className={`${inputCls} [color-scheme:dark]`}
-                    />
+                    <input type="date" value={item.date_taken} disabled={item.status === "done"} onChange={(e) => updateItem(item.localId, { date_taken: e.target.value })} className={`${inputCls} [color-scheme:dark]`} />
                   </div>
                   <div>
                     <label className={labelCls}>Caption</label>
-                    <input
-                      type="text"
-                      value={item.caption}
-                      disabled={item.status === "done"}
-                      onChange={(e) =>
-                        updateItem(item.localId, { caption: e.target.value })
-                      }
-                      className={inputCls}
-                    />
+                    <input type="text" value={item.caption} disabled={item.status === "done"} onChange={(e) => updateItem(item.localId, { caption: e.target.value })} className={inputCls} />
                   </div>
                 </div>
 
                 <div>
                   <label className={labelCls}>Alt text</label>
-                  <input
-                    type="text"
-                    value={item.alt_text}
-                    disabled={item.status === "done"}
-                    onChange={(e) =>
-                      updateItem(item.localId, { alt_text: e.target.value })
-                    }
-                    className={inputCls}
-                  />
+                  <input type="text" value={item.alt_text} disabled={item.status === "done"} onChange={(e) => updateItem(item.localId, { alt_text: e.target.value })} className={inputCls} />
                 </div>
 
                 {/* Per-item status row */}
@@ -413,31 +383,16 @@ export default function PhotoUploader() {
                   {item.status === "uploading" && (
                     <div className="flex-1 flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-liol-text/10 overflow-hidden">
-                        <div
-                          className="h-full bg-liol-text duration-200"
-                          style={{ width: `${item.progress}%` }}
-                        />
+                        <div className="h-full bg-liol-text duration-200" style={{ width: `${item.progress}%` }} />
                       </div>
-                      <span className="text-[0.7rem] text-liol-subtext tabular-nums">
-                        {item.progress}%
-                      </span>
+                      <span className="text-[0.7rem] text-liol-subtext tabular-nums">{item.progress}%</span>
                     </div>
                   )}
-                  {item.status === "done" && (
-                    <span className="text-[0.7rem] text-green-400">Uploaded</span>
-                  )}
-                  {item.status === "error" && (
-                    <span className="text-[0.7rem] text-red-400">{item.errorMsg}</span>
-                  )}
-                  {!item.name.trim() && item.status === "idle" && (
-                    <span className="text-[0.7rem] text-amber-400/80">Name required</span>
-                  )}
-
+                  {item.status === "done" && <span className="text-[0.7rem] text-green-400">Uploaded</span>}
+                  {item.status === "error" && <span className="text-[0.7rem] text-red-400">{item.errorMsg}</span>}
+                  {!item.name.trim() && item.status === "idle" && <span className="text-[0.7rem] text-amber-400/80">Name required</span>}
                   {item.status !== "uploading" && item.status !== "done" && (
-                    <button
-                      onClick={() => removeItem(item.localId)}
-                      className="ml-auto text-[0.7rem] text-liol-subtext hover:text-red-300 duration-200 cursor-pointer"
-                    >
+                    <button onClick={() => removeItem(item.localId)} className="ml-auto text-[0.7rem] text-liol-subtext hover:text-red-300 duration-200 cursor-pointer">
                       Remove
                     </button>
                   )}
@@ -448,9 +403,7 @@ export default function PhotoUploader() {
         </div>
       )}
 
-      {/* Success banner — everything staged finished uploading.
-          Gives a clear "done, here's where they live" exit instead
-          of leaving Corey & Ed parked on a page of checkmarks. */}
+      {/* Success banner */}
       {items.length > 0 && pending.length === 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-green-400/30 bg-green-500/5 px-4 py-3.5">
           <div className="flex items-center gap-2.5">
@@ -462,23 +415,17 @@ export default function PhotoUploader() {
             </p>
           </div>
           <div className="sm:ml-auto flex items-center gap-2.5">
-            <Link
-              href="/admin/library"
-              className="rounded-lg bg-liol-text text-liol-bg text-sm font-medium px-4 py-2 hover:bg-liol-text/85 duration-200"
-            >
+            <Link href="/admin/library" className="rounded-lg bg-liol-text text-liol-bg text-sm font-medium px-4 py-2 hover:bg-liol-text/85 duration-200">
               View in library →
             </Link>
-            <button
-              onClick={clearCompleted}
-              className="rounded-lg text-sm px-4 py-2 border border-liol-text/15 text-liol-subtext hover:text-liol-text hover:border-liol-text/30 duration-200 cursor-pointer"
-            >
+            <button onClick={clearCompleted} className="rounded-lg text-sm px-4 py-2 border border-liol-text/15 text-liol-subtext hover:text-liol-text hover:border-liol-text/30 duration-200 cursor-pointer">
               Upload more
             </button>
           </div>
         </div>
       )}
 
-      {/* Action bar — while photos are still waiting to upload */}
+      {/* Action bar */}
       {pending.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
           <button
@@ -490,17 +437,11 @@ export default function PhotoUploader() {
                 : "bg-liol-text/10 text-liol-subtext cursor-not-allowed"
             }`}
           >
-            {isUploading
-              ? "Uploading…"
-              : `Upload ${pending.length} photo${pending.length === 1 ? "" : "s"}`}
+            {isUploading ? "Uploading…" : `Upload ${pending.length} photo${pending.length === 1 ? "" : "s"}`}
           </button>
 
           {doneCount > 0 && (
-            <button
-              onClick={clearCompleted}
-              disabled={isUploading}
-              className="rounded-lg text-sm px-4 py-2.5 border border-liol-text/15 text-liol-subtext hover:text-liol-text hover:border-liol-text/30 duration-200 cursor-pointer disabled:opacity-50"
-            >
+            <button onClick={clearCompleted} disabled={isUploading} className="rounded-lg text-sm px-4 py-2.5 border border-liol-text/15 text-liol-subtext hover:text-liol-text hover:border-liol-text/30 duration-200 cursor-pointer disabled:opacity-50">
               Clear {doneCount} completed
             </button>
           )}

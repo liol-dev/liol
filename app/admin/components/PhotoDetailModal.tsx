@@ -3,34 +3,22 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
-  CATEGORIES,
   formatPhotoDate,
   type PhotoRecord,
   type PhotoCategory,
+  type CategoryRecord,
 } from "@/app/lib/photos";
 
 // ============================================================
 // PHOTO DETAIL MODAL — fullscreen view + edit + delete
-// Established overlay pattern (fixed inset-0 z-50 bg-liol-bg/95).
-//
-// Left: the photo at its native aspect ratio, contained to the
-//   viewport (object-contain — never cropped, never stretched).
-// Right: metadata panel —
-//   • name, category, date taken, caption, alt text → editable
-//   • uploaded (created_at) → IMMUTABLE, visibly locked
-//   • Save enables only when something actually changed
-//   • Delete is two-stage: trash → "Confirm delete?" morph,
-//     auto-reverting after 3s so a stray click can't nuke a photo
-//
-// Closes via X, backdrop click, or Escape. Body scroll locks
-// while open (same contract as the public lightbox).
-// Save/Delete are delegated up via props — today they mutate
-// React state; next session they call Supabase. The modal
-// doesn't know or care which.
+// Categories are passed in from LibraryManager (fetched once
+// there and shared here + PhotoLibrary) so filter pills and
+// the category select always reflect the live DB state.
 // ============================================================
 
 interface PhotoDetailModalProps {
   photo: PhotoRecord;
+  categories: CategoryRecord[];
   onClose: () => void;
   onSave: (updated: PhotoRecord) => void;
   onDelete: (id: string) => void | Promise<void>;
@@ -38,11 +26,11 @@ interface PhotoDetailModalProps {
 
 export default function PhotoDetailModal({
   photo,
+  categories,
   onClose,
   onSave,
   onDelete,
 }: PhotoDetailModalProps) {
-  // ── Editable draft — initialized from the record ──────────
   const [draft, setDraft] = useState({
     name: photo.name,
     category: photo.category as PhotoCategory,
@@ -51,11 +39,9 @@ export default function PhotoDetailModal({
     alt_text: photo.alt_text,
   });
 
-  // ── Two-stage delete ──────────────────────────────────────
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Dirty check — Save only lights up when a field changed
   const isDirty =
     draft.name !== photo.name ||
     draft.category !== photo.category ||
@@ -63,11 +49,8 @@ export default function PhotoDetailModal({
     draft.caption !== photo.caption ||
     draft.alt_text !== photo.alt_text;
 
-  // ── Escape-to-close + body scroll lock ────────────────────
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
@@ -76,8 +59,6 @@ export default function PhotoDetailModal({
     };
   }, [onClose]);
 
-  // Confirm state auto-reverts so an abandoned first click
-  // doesn't leave a live "Confirm delete?" trap behind
   useEffect(() => {
     if (!confirmingDelete) return;
     const timer = setTimeout(() => setConfirmingDelete(false), 3000);
@@ -87,32 +68,21 @@ export default function PhotoDetailModal({
   const set = <K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const handleSave = () => {
-    if (!isDirty) return;
-    onSave({ ...photo, ...draft });
-  };
+  const handleSave = () => { if (!isDirty) return; onSave({ ...photo, ...draft }); };
 
   const handleDelete = async () => {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
-    // Second click — run the (async) delete. Parent removes the CDN
-    // asset + DB row, then closes the modal on success. On failure
-    // it surfaces an error and we re-enable the button.
+    if (!confirmingDelete) { setConfirmingDelete(true); return; }
     setIsDeleting(true);
-    try {
-      await onDelete(photo.id);
-    } finally {
-      setIsDeleting(false);
-    }
+    try { await onDelete(photo.id); } finally { setIsDeleting(false); }
   };
 
-  // Shared field styles
-  const labelCls =
-    "text-[0.65rem] tracking-[0.08em] uppercase text-liol-subtext";
-  const inputCls =
-    "mt-1.5 w-full rounded-lg bg-liol-text/5 border border-liol-text/15 px-3.5 py-2 text-sm text-liol-text outline-none focus:border-liol-text/40 duration-200";
+  const labelCls = "text-[0.65rem] tracking-[0.08em] uppercase text-liol-subtext";
+  const inputCls = "mt-1.5 w-full rounded-lg bg-liol-text/5 border border-liol-text/15 px-3.5 py-2 text-sm text-liol-text outline-none focus:border-liol-text/40 duration-200";
+
+  // Resolve the current category's label for display — falls back
+  // to the raw slug if categories haven't loaded yet.
+  const currentCatLabel =
+    categories.find((c) => c.slug === photo.category)?.label ?? photo.category;
 
   return (
     <div
@@ -126,8 +96,7 @@ export default function PhotoDetailModal({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-5xl 3xl:max-w-6xl max-h-full overflow-y-auto md:overflow-visible bg-liol-bg border border-liol-text/15 rounded-xl flex flex-col md:flex-row"
       >
-
-        {/* ── Image — native ratio, contained, never cropped ── */}
+        {/* ── Image ── */}
         <div className="relative md:flex-1 bg-black/40 flex items-center justify-center rounded-t-xl md:rounded-l-xl md:rounded-tr-none min-h-[40vh] md:min-h-[70vh]">
           <Image
             src={photo.src}
@@ -136,8 +105,6 @@ export default function PhotoDetailModal({
             sizes="(max-width: 768px) 100vw, 60vw"
             className="object-contain"
           />
-
-          {/* Close — top-left over the image */}
           <button
             onClick={onClose}
             aria-label="Close"
@@ -151,50 +118,40 @@ export default function PhotoDetailModal({
           </button>
         </div>
 
-        {/* ── Metadata panel ─────────────────────────────────── */}
+        {/* ── Metadata panel ── */}
         <div className="md:w-80 shrink-0 p-5 max-xs:p-4 flex flex-col gap-4 border-t md:border-t-0 md:border-l border-liol-text/10">
 
-          {/* Name */}
           <div>
             <label htmlFor="photo-name" className={labelCls}>Name</label>
-            <input
-              id="photo-name"
-              type="text"
-              value={draft.name}
-              onChange={(e) => set("name", e.target.value)}
-              className={inputCls}
-            />
+            <input id="photo-name" type="text" value={draft.name} onChange={(e) => set("name", e.target.value)} className={inputCls} />
           </div>
 
-          {/* Category */}
           <div>
             <label htmlFor="photo-category" className={labelCls}>Category</label>
-            <select
-              id="photo-category"
-              value={draft.category}
-              onChange={(e) => set("category", e.target.value as PhotoCategory)}
-              className={`${inputCls} cursor-pointer appearance-none`}
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat.id} value={cat.id} className="bg-liol-bg">
-                  {cat.label}
-                </option>
-              ))}
-            </select>
+            {categories.length === 0 ? (
+              // Fallback while categories are loading — show the raw slug
+              // so the modal isn't broken if the fetch is slow.
+              <p className={`${inputCls} text-liol-subtext`}>{currentCatLabel}</p>
+            ) : (
+              <select
+                id="photo-category"
+                value={draft.category}
+                onChange={(e) => set("category", e.target.value as PhotoCategory)}
+                className={`${inputCls} cursor-pointer appearance-none`}
+              >
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.slug} className="bg-liol-bg">
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* Date taken (editable) + Uploaded (locked) — stacks
-              to one column below 400px so neither field crushes */}
           <div className="grid grid-cols-2 max-xs:grid-cols-1 gap-3">
             <div>
               <label htmlFor="photo-date-taken" className={labelCls}>Date taken</label>
-              <input
-                id="photo-date-taken"
-                type="date"
-                value={draft.date_taken}
-                onChange={(e) => set("date_taken", e.target.value)}
-                className={`${inputCls} [color-scheme:dark]`}
-              />
+              <input id="photo-date-taken" type="date" value={draft.date_taken} onChange={(e) => set("date_taken", e.target.value)} className={`${inputCls} [color-scheme:dark]`} />
             </div>
             <div>
               <span className={labelCls}>
@@ -204,44 +161,23 @@ export default function PhotoDetailModal({
                   <path d="M8 11V7a4 4 0 018 0v4" />
                 </svg>
               </span>
-              {/* Immutable — dashed, muted, not a form control */}
-              <p
-                title="Upload date can't be changed"
-                className="mt-1.5 w-full rounded-lg border border-dashed border-liol-text/15 px-3.5 py-2 text-sm text-liol-subtext select-none"
-              >
+              <p title="Upload date can't be changed" className="mt-1.5 w-full rounded-lg border border-dashed border-liol-text/15 px-3.5 py-2 text-sm text-liol-subtext select-none">
                 {formatPhotoDate(photo.created_at)}
               </p>
             </div>
           </div>
 
-          {/* Caption */}
           <div>
             <label htmlFor="photo-caption" className={labelCls}>Caption</label>
-            <textarea
-              id="photo-caption"
-              rows={3}
-              value={draft.caption}
-              onChange={(e) => set("caption", e.target.value)}
-              className={`${inputCls} resize-none`}
-            />
+            <textarea id="photo-caption" rows={3} value={draft.caption} onChange={(e) => set("caption", e.target.value)} className={`${inputCls} resize-none`} />
           </div>
 
-          {/* Alt text */}
           <div>
             <label htmlFor="photo-alt" className={labelCls}>Alt text</label>
-            <textarea
-              id="photo-alt"
-              rows={2}
-              value={draft.alt_text}
-              onChange={(e) => set("alt_text", e.target.value)}
-              className={`${inputCls} resize-none`}
-            />
-            <p className="mt-1 text-[0.65rem] text-liol-subtext">
-              Describes the photo for screen readers & SEO.
-            </p>
+            <textarea id="photo-alt" rows={2} value={draft.alt_text} onChange={(e) => set("alt_text", e.target.value)} className={`${inputCls} resize-none`} />
+            <p className="mt-1 text-[0.65rem] text-liol-subtext">Describes the photo for screen readers & SEO.</p>
           </div>
 
-          {/* ── Actions ──────────────────────────────────────── */}
           <div className="mt-auto pt-2 flex gap-2.5">
             <button
               onClick={handleSave}
@@ -255,9 +191,6 @@ export default function PhotoDetailModal({
               {isDirty ? "Save changes" : "Saved"}
             </button>
 
-            {/* Two-stage delete — morphs in place, no second modal.
-                While the CDN + DB delete is in flight it shows a
-                spinner-free "Deleting…" and locks to prevent dupes. */}
             <button
               onClick={handleDelete}
               disabled={isDeleting}
@@ -270,11 +203,7 @@ export default function PhotoDetailModal({
                   : "px-3.5 bg-transparent border-liol-text/15 text-liol-subtext hover:text-red-300 hover:border-red-400/40 cursor-pointer"
               }`}
             >
-              {isDeleting ? (
-                "Deleting…"
-              ) : confirmingDelete ? (
-                "Confirm delete?"
-              ) : (
+              {isDeleting ? "Deleting…" : confirmingDelete ? "Confirm delete?" : (
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6" />
                   <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />

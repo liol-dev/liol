@@ -4,44 +4,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  CATEGORIES,
   formatPhotoDate,
   type PhotoRecord,
   type PhotoCategory,
+  type CategoryRecord,
 } from "@/app/lib/photos";
 
 // ============================================================
 // PHOTO LIBRARY — searchable, filterable grid of ALL photos
-// The client-facing "find anything fast" surface:
-//   • Search box — matches photo name (and caption) as you type
-//   • Category pills — All | Couples | Engagements | Portraits
-//   • Live result count so Corey & Ed always know what they're
-//     looking at
-//   • Uniform square grid; hover reveals name + category + date
-//   • Tiles open the detail modal (onSelect)
-//
-// BULK MODE (only when onBulkDelete is provided):
-//   A "Select" toggle flips tiles into checkboxes. A sticky-feeling
-//   action bar shows the count, a select-all-filtered toggle, and a
-//   two-stage "Delete selected" that delegates the actual removal
-//   (CDN + DB) up to the parent.
-//
-// All filtering is client-side — fine at portfolio scale (hundreds
-// of photos, not millions).
+// Categories are passed in from LibraryManager (fetched once
+// there, shared here + PhotoDetailModal) so filter pills always
+// reflect whatever's in the DB — no hardcoded list.
 // ============================================================
 
 type FilterValue = "all" | PhotoCategory;
 
 interface PhotoLibraryProps {
   photos: PhotoRecord[];
-  /** Opens the detail modal for a single photo */
+  categories: CategoryRecord[];
   onSelect?: (photo: PhotoRecord) => void;
-  /** Enables multi-select + bulk delete when provided */
   onBulkDelete?: (ids: string[]) => Promise<void>;
 }
 
 export default function PhotoLibrary({
   photos,
+  categories,
   onSelect,
   onBulkDelete,
 }: PhotoLibraryProps) {
@@ -54,9 +41,17 @@ export default function PhotoLibrary({
   const [confirmingBulk, setConfirmingBulk] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
+  // Build filter pill list from live categories (All + each slug)
+  const filterItems: { id: FilterValue; label: string }[] = [
+    { id: "all", label: "All" },
+    ...categories.map((c) => ({ id: c.slug as FilterValue, label: c.label })),
+  ];
+
+  // Slug → label lookup for hover overlay
+  const categoryLabel = (slug: string) =>
+    categories.find((c) => c.slug === slug)?.label ?? slug;
+
   // ── Filtering ─────────────────────────────────────────────
-  // Category narrows first, then the text query matches against
-  // name OR caption (case-insensitive).
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return photos.filter((p) => {
@@ -69,8 +64,15 @@ export default function PhotoLibrary({
     });
   }, [photos, query, filter]);
 
-  // Prune selected ids whenever the photo set changes (e.g. after a
-  // delete) so the count never references photos that are gone.
+  // Reset filter to "all" if the active filter slug no longer exists
+  // (e.g. a category was deleted/renamed externally)
+  useEffect(() => {
+    if (filter === "all") return;
+    const stillExists = categories.some((c) => c.slug === filter);
+    if (!stillExists) setFilter("all");
+  }, [categories, filter]);
+
+  // Prune selected ids when photos list changes after a delete
   useEffect(() => {
     setSelected((prev) => {
       const next = new Set<string>();
@@ -79,18 +81,11 @@ export default function PhotoLibrary({
     });
   }, [photos]);
 
-  // Auto-revert the bulk confirm prompt so an abandoned first click
-  // doesn't leave a live "Confirm?" trap behind.
   useEffect(() => {
     if (!confirmingBulk) return;
     const t = setTimeout(() => setConfirmingBulk(false), 3000);
     return () => clearTimeout(t);
   }, [confirmingBulk]);
-
-  const filterItems: { id: FilterValue; label: string }[] = [
-    { id: "all", label: "All" },
-    ...CATEGORIES,
-  ];
 
   // ── Selection helpers ─────────────────────────────────────
   const exitSelectMode = () => {
@@ -125,14 +120,10 @@ export default function PhotoLibrary({
 
   const handleBulkDelete = async () => {
     if (selected.size === 0 || !onBulkDelete) return;
-    if (!confirmingBulk) {
-      setConfirmingBulk(true);
-      return;
-    }
+    if (!confirmingBulk) { setConfirmingBulk(true); return; }
     setIsBulkDeleting(true);
     try {
       await onBulkDelete(Array.from(selected));
-      // Parent prunes photos → the prune effect clears selection.
       setConfirmingBulk(false);
       setSelectMode(false);
     } finally {
@@ -140,31 +131,18 @@ export default function PhotoLibrary({
     }
   };
 
-  // ── True empty state — no photos exist at all ─────────────
-  // Distinct from "no search matches": a fresh site (Corey & Ed
-  // haven't uploaded yet) needs a way FORWARD, not a way to clear
-  // filters that aren't the problem.
+  // ── True empty state ──────────────────────────────────────
   if (photos.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-liol-text/15 px-6 py-16 text-center">
-        <svg
-          aria-hidden="true"
-          className="mx-auto w-10 h-10 text-liol-subtext"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"
-        >
+        <svg aria-hidden="true" className="mx-auto w-10 h-10 text-liol-subtext" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <circle cx="8.5" cy="8.5" r="1.5" />
           <path d="M21 15l-5-5L5 21" />
         </svg>
         <p className="mt-4 text-sm text-liol-text">No photos yet.</p>
-        <p className="mt-1 text-xs text-liol-subtext">
-          Upload your first photo to start building the gallery.
-        </p>
-        <Link
-          href="/admin/upload"
-          className="mt-5 inline-block rounded-lg bg-liol-text text-liol-bg text-sm font-medium px-5 py-2.5 hover:bg-liol-text/85 duration-200"
-        >
+        <p className="mt-1 text-xs text-liol-subtext">Upload your first photo to start building the gallery.</p>
+        <Link href="/admin/upload" className="mt-5 inline-block rounded-lg bg-liol-text text-liol-bg text-sm font-medium px-5 py-2.5 hover:bg-liol-text/85 duration-200">
           Upload photos
         </Link>
       </div>
@@ -176,17 +154,11 @@ export default function PhotoLibrary({
   return (
     <div>
 
-      {/* ── Controls row: search + category pills + select ─── */}
+      {/* ── Controls: search + filter pills + select toggle ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
 
-        {/* Search box with leading magnifier icon */}
         <div className="relative sm:max-w-xs w-full">
-          <svg
-            aria-hidden="true"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-liol-subtext"
-            viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="1.5" strokeLinecap="round"
-          >
+          <svg aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-liol-subtext" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.5" y2="16.5" />
           </svg>
@@ -200,7 +172,7 @@ export default function PhotoLibrary({
           />
         </div>
 
-        {/* Category pills */}
+        {/* Dynamic category filter pills */}
         <div className="flex flex-wrap items-center gap-2 max-xs:gap-1.5" role="group" aria-label="Filter by category">
           {filterItems.map((item) => (
             <button
@@ -218,7 +190,6 @@ export default function PhotoLibrary({
           ))}
         </div>
 
-        {/* Right cluster: count + select toggle */}
         <div className="sm:ml-auto flex items-center gap-3">
           <p className="text-xs text-liol-subtext" aria-live="polite">
             {filtered.length} of {photos.length} photos
@@ -238,20 +209,13 @@ export default function PhotoLibrary({
         </div>
       </div>
 
-      {/* ── Bulk action bar — only while selecting ──────────── */}
+      {/* ── Bulk action bar ───────────────────────────────── */}
       {inSelection && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-liol-text/15 bg-liol-text/5 px-4 py-3">
-          <span className="text-sm text-liol-text">
-            {selected.size} selected
-          </span>
-
-          <button
-            onClick={toggleSelectAllFiltered}
-            className="text-xs text-liol-subtext hover:text-liol-text underline underline-offset-4 duration-200 cursor-pointer"
-          >
+          <span className="text-sm text-liol-text">{selected.size} selected</span>
+          <button onClick={toggleSelectAllFiltered} className="text-xs text-liol-subtext hover:text-liol-text underline underline-offset-4 duration-200 cursor-pointer">
             {allFilteredSelected ? "Clear all" : "Select all shown"}
           </button>
-
           <button
             onClick={handleBulkDelete}
             disabled={selected.size === 0 || isBulkDeleting}
@@ -274,7 +238,7 @@ export default function PhotoLibrary({
         </div>
       )}
 
-      {/* ── Photo grid ─────────────────────────────────────── */}
+      {/* ── Photo grid ──────────────────────────────────────── */}
       {filtered.length > 0 ? (
         <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 gap-2.5 max-xs:gap-2">
           {filtered.map((photo, index) => {
@@ -283,35 +247,24 @@ export default function PhotoLibrary({
               <button
                 key={photo.id}
                 onClick={() => handleTileClick(photo)}
-                aria-label={
-                  inSelection
-                    ? `${isSel ? "Deselect" : "Select"} ${photo.name}`
-                    : `Open ${photo.name}`
-                }
+                aria-label={inSelection ? `${isSel ? "Deselect" : "Select"} ${photo.name}` : `Open ${photo.name}`}
                 aria-pressed={inSelection ? isSel : undefined}
-                className={`group relative aspect-square overflow-hidden rounded-lg text-left cursor-pointer ${
-                  isSel ? "ring-2 ring-liol-text" : ""
-                }`}
+                className={`group relative aspect-square overflow-hidden rounded-lg text-left cursor-pointer ${isSel ? "ring-2 ring-liol-text" : ""}`}
               >
                 <Image
                   src={photo.src}
                   alt={photo.alt_text}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 20vw"
-                  // First row is above the fold — preload it so the
-                  // library's LCP doesn't wait on lazy-loading.
                   priority={index < 5}
                   className="object-cover duration-300 group-hover:scale-[1.03]"
                 />
 
-                {/* Selection checkbox — only in select mode */}
                 {inSelection && (
                   <span
                     aria-hidden="true"
                     className={`absolute top-2 left-2 z-10 w-5 h-5 rounded-full border flex items-center justify-center duration-200 ${
-                      isSel
-                        ? "bg-liol-text border-liol-text text-liol-bg"
-                        : "bg-liol-bg/60 border-liol-text/50 text-transparent"
+                      isSel ? "bg-liol-text border-liol-text text-liol-bg" : "bg-liol-bg/60 border-liol-text/50 text-transparent"
                     }`}
                   >
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -320,13 +273,11 @@ export default function PhotoLibrary({
                   </span>
                 )}
 
-                {/* Hover/focus overlay — name, category, date */}
+                {/* Hover overlay — uses live category label, not raw slug */}
                 <div className="absolute inset-0 bg-liol-bg/70 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 duration-300 flex flex-col justify-end p-3">
-                  <p className="text-sm text-liol-text truncate">
-                    {photo.name}
-                  </p>
+                  <p className="text-sm text-liol-text truncate">{photo.name}</p>
                   <p className="mt-0.5 text-[0.7rem] text-liol-subtext capitalize">
-                    {photo.category} · {formatPhotoDate(photo.date_taken)}
+                    {categoryLabel(photo.category)} · {formatPhotoDate(photo.date_taken)}
                   </p>
                 </div>
               </button>
@@ -334,16 +285,12 @@ export default function PhotoLibrary({
           })}
         </div>
       ) : (
-        /* No matches for the current search/filter (photos DO exist) */
         <div className="mt-5 rounded-xl bg-liol-text/5 px-6 py-12 text-center">
           <p className="text-sm text-liol-subtext">
             No photos match{query ? ` "${query}"` : ""} in this category.
           </p>
           <button
-            onClick={() => {
-              setQuery("");
-              setFilter("all");
-            }}
+            onClick={() => { setQuery(""); setFilter("all"); }}
             className="mt-3 text-sm text-liol-text underline underline-offset-4 hover:text-liol-subtext duration-200 cursor-pointer"
           >
             Clear search & filters

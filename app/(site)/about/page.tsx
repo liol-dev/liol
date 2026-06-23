@@ -6,9 +6,7 @@ import PhotographerCard from "./PhotographerCard";
 
 // ============================================================
 // ABOUT US PAGE — "The Lens Behind the Lens"
-// PageHeader (shared) + Our Story copy + the two photographer
-// profiles in a divided two-column grid (stacked on mobile,
-// where each card's photo runs full-bleed).
+// PageHeader + Our Story copy + photographer profiles + contact CTA.
 // ============================================================
 
 export default function AboutPage() {
@@ -17,13 +15,7 @@ export default function AboutPage() {
 
       <PageHeader title="The Lens Behind the Lens" />
 
-      {/* ── Our Story ──────────────────────────────────────────
-          Em-dash section label + single roomy paragraph.
-          Mobile: centered, with a closing em-dash on the label
-          ("— Our Story —") to balance the symmetry. Desktop:
-          left-aligned, leading dash only — matching PageHeader's
-          center-mobile / left-desktop convention.
-      ──────────────────────────────────────────────────────── */}
+      {/* ── Our Story ──────────────────────────────────────── */}
       <section className="px-8 md:px-12 mt-4 md:mt-10 text-center md:text-left">
         <ScrollRevealElement direction="up" distance={24} duration={0.6}>
           <h2 className="text-2xl md:text-3xl font-light tracking-[10%]">
@@ -43,20 +35,8 @@ export default function AboutPage() {
         </ScrollRevealElement>
       </section>
 
-      {/* ── The Photographers ──────────────────────────────────
-          Two profile columns with a thin vertical divider on
-          desktop (divide-x). Mobile: stacked, no side padding so
-          each card's photo can bleed edge-to-edge — the cards
-          pad their own text content instead.
-          Per-column gutters (md:pr-16 / md:pl-16) keep breathing
-          room around the center divider line.
-      ──────────────────────────────────────────────────────── */}
+      {/* ── The Photographers ──────────────────────────────── */}
       <section className="mt-20 md:mt-28 md:px-12">
-        {/* ScrollRevealGroup IS the grid now (new contract) —
-            layout classes live on the group, each card gets a
-            staggered wrapper that doubles as the grid item.
-            divide-x draws between the wrappers; the cards' own
-            pr/pl gutters keep space around the line. */}
         <ScrollRevealGroup
           className="grid md:grid-cols-2 gap-y-20 md:gap-y-0 md:divide-x md:divide-liol-subtext/40"
           staggerDelay={0.18}
@@ -77,6 +57,50 @@ export default function AboutPage() {
             className="md:pl-16"
           />
         </ScrollRevealGroup>
+      </section>
+
+      {/* ── Contact CTA ────────────────────────────────────────
+          Full-width section below the photographers. Centered on
+          both mobile and desktop — this is a destination, not a
+          section header, so center alignment fits regardless of
+          viewport.
+      ──────────────────────────────────────────────────────── */}
+      <section className="mt-28 md:mt-64 px-8 md:px-12">
+        <ScrollRevealElement direction="up" distance={24} duration={0.7} delay={0.1}>
+          <div className="max-w-2xl mx-auto text-center flex flex-col items-center gap-8">
+
+            {/* Section label */}
+            <h2 className="text-2xl md:text-3xl font-light tracking-[10%]">
+              &mdash; Work With Us &mdash;
+            </h2>
+
+            {/* Supporting copy */}
+            <p className="text-base md:text-lg font-light leading-loose text-liol-subtext max-w-lg">
+              Have a moment worth capturing? We&apos;d love to hear about it.
+              Reach out and let&apos;s make something together.
+            </p>
+
+            {/* Email CTA — styled as a prominent outlined button on
+                mobile, expands to a larger pill on desktop. Opens
+                the user's mail client directly via mailto. */}
+            <a
+              href="mailto:lifeinourlensphotography@gmail.com"
+              className="group inline-flex items-center gap-3 border border-liol-text/30 hover:border-liol-text rounded-full px-4 md:px-8 py-4 text-sm md:text-base font-light tracking-[0.08em] text-liol-subtext hover:text-liol-text duration-300"
+            >
+              {/* Envelope icon */}
+              <svg
+                className="w-4 h-4 shrink-0 text-liol-subtext group-hover:text-liol-text duration-300"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M2 7l10 7 10-7" />
+              </svg>
+              lifeinourlensphotography@gmail.com
+            </a>
+
+          </div>
+        </ScrollRevealElement>
       </section>
 
       <ScrollTopButton />

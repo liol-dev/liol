@@ -1,26 +1,25 @@
 import NavBar from "@/app/components/NavBar";
 import Footer from "@/app/components/Footer";
+import { fetchSocialLinks } from "@/app/lib/social-links.server";
 
 // ============================================================
 // (SITE) LAYOUT — public-facing pages
-// Route group layout that owns the public chrome (NavBar +
-// Footer). Everything inside app/(site)/ gets wrapped here;
-// app/admin/ deliberately lives OUTSIDE this group so the
-// dashboard renders without the public nav.
-// The "(site)" folder name never appears in URLs — pages stay
-// at /, /about, /gallery.
+// Fetches social links once here (server-side) and passes them
+// to NavBar and Footer so both stay in sync with the admin config.
 // ============================================================
 
-export default function SiteLayout({
+export default async function SiteLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const socialLinks = await fetchSocialLinks();
+
   return (
     <>
-      <NavBar />
+      <NavBar socialLinks={socialLinks} />
       {children}
-      <Footer />
+      <Footer socialLinks={socialLinks} />
     </>
   );
 }
