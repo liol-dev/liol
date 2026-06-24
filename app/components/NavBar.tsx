@@ -56,7 +56,7 @@ const NavBar = ({ socialLinks = {} }: { socialLinks?: SocialLinksMap }) => {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const desktopLinkStyle = "text-sm duration-300 tracking-[10%]";
+  const desktopLinkStyle = "text-sm 3xl:text-base duration-300 tracking-[10%]";
   const desktopActive = "text-liol-text";
   const desktopInactive = "text-liol-subtext hover:text-liol-text";
 
@@ -67,7 +67,12 @@ const NavBar = ({ socialLinks = {} }: { socialLinks?: SocialLinksMap }) => {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 bg-liol-bg text-liol-text py-4 drop-shadow-md">
+      {/* ── Sticky navbar ────────────────────────────────────────
+          py-4 on md+ (desktop). On mobile, py-[1.375rem] gives
+          ~1.3× the desktop height so the bar feels more spacious
+          on touch devices.
+      ───────────────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-40 bg-liol-bg text-liol-text py-[1.375rem] md:py-4 drop-shadow-md">
         <div className="mx-auto px-8 md:px-12">
           <div className="flex justify-between items-center">
 
@@ -106,7 +111,12 @@ const NavBar = ({ socialLinks = {} }: { socialLinks?: SocialLinksMap }) => {
       </nav>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-50 bg-liol-bg/99 flex flex-col px-8 py-4">
+        /* ── Mobile menu overlay ───────────────────────────────
+            px-8 py-[1.375rem] mirrors the navbar padding exactly
+            so the close button sits on top of where the hamburger
+            was — same horizontal edge, same vertical position.
+        ──────────────────────────────────────────────────────── */
+        <div className="fixed inset-0 z-50 bg-liol-bg/99 flex flex-col px-8 py-[1.375rem]">
 
           <div className="flex justify-end">
             <button
@@ -164,7 +174,7 @@ const NavBar = ({ socialLinks = {} }: { socialLinks?: SocialLinksMap }) => {
                 </div>
               )}
 
-              <p className="text-sm text-liol-subtext font-light tracking-widest text-center pb-12">
+              <p className="text-sm 3xl:text-base text-liol-subtext font-light tracking-widest text-center pb-12">
                 ©2026 — Life In Our Lens
               </p>
             </div>

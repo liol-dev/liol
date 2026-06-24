@@ -62,10 +62,10 @@ export default function PhotographerCard({
           </div>
 
           <div>
-            <h3 className="text-lg md:text-xl font-semibold tracking-wide">
+            <h3 className="text-lg md:text-xl 3xl:text-2xl font-semibold tracking-wide">
               {name}
             </h3>
-            <p className="mt-0.5 text-xs uppercase tracking-[10%] text-liol-subtext">
+            <p className="mt-0.5 text-xs 3xl:text-sm uppercase tracking-[10%] text-liol-subtext">
               {role}
             </p>
           </div>
@@ -75,7 +75,7 @@ export default function PhotographerCard({
         <hr className="mt-5 border-liol-text/60" />
 
         {/* Bio — light weight, comfortable leading */}
-        <p className="mt-6 text-sm md:text-base font-light leading-loose text-liol-text">
+        <p className="mt-6 text-sm md:text-base 3xl:text-xl font-light leading-loose text-liol-text">
           {bio}
         </p>
 

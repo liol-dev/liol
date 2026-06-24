@@ -24,7 +24,7 @@ export default function AboutPage() {
         </ScrollRevealElement>
 
         <ScrollRevealElement direction="up" distance={24} duration={0.6} delay={0.15}>
-          <p className="mt-8 md:mt-12 max-w-5xl mx-auto md:mx-0 text-base md:text-lg font-light leading-loose md:leading-[2.4]">
+          <p className="mt-8 md:mt-12 max-w-5xl mx-auto md:mx-0 text-base md:text-lg 3xl:text-2xl font-light leading-loose md:leading-[2.4]">
             Life in Our Lens started with a simple idea, that the best
             photographs aren&apos;t planned, they&apos;re caught. Corey and Ed
             built this brand around that belief: show up, stay sharp, and let
@@ -75,7 +75,7 @@ export default function AboutPage() {
             </h2>
 
             {/* Supporting copy */}
-            <p className="text-base md:text-lg font-light leading-loose text-liol-subtext max-w-lg">
+            <p className="text-base md:text-lg 3xl:text-2xl font-light leading-loose text-liol-subtext max-w-lg">
               Have a moment worth capturing? We&apos;d love to hear about it.
               Reach out and let&apos;s make something together.
             </p>
@@ -85,7 +85,7 @@ export default function AboutPage() {
                 the user's mail client directly via mailto. */}
             <a
               href="mailto:lifeinourlensphotography@gmail.com"
-              className="group inline-flex items-center gap-3 border border-liol-text/30 hover:border-liol-text rounded-full px-4 md:px-8 py-4 text-sm md:text-base font-light tracking-[0.08em] text-liol-subtext hover:text-liol-text duration-300"
+              className="group inline-flex items-center gap-3 border border-liol-text/30 hover:border-liol-text rounded-full px-4 md:px-8 py-4 text-sm md:text-base 3xl:text-xl font-light tracking-[0.08em] text-liol-subtext hover:text-liol-text duration-300"
             >
               {/* Envelope icon */}
               <svg

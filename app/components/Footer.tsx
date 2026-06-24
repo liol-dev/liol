@@ -75,7 +75,7 @@ export default function Footer({
           </div>
 
           {/* Center — site credit (always visible) */}
-          <p className="text-xs text-liol-subtext font-light tracking-[10%] text-center">
+          <p className="text-xs 3xl:text-sm text-liol-subtext font-light tracking-[10%] text-center">
             Site by{" "}
             <a
               href="https://marcmiango.dev/"
@@ -88,7 +88,7 @@ export default function Footer({
           </p>
 
           {/* Right — copyright (desktop only) */}
-          <p className="hidden md:block text-xs text-liol-subtext font-light tracking-[10%] text-right">
+          <p className="hidden md:block text-xs 3xl:text-sm text-liol-subtext font-light tracking-[10%] text-right">
             &copy;2026 &mdash; Life In Our Lens
           </p>
 

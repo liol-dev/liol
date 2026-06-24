@@ -3,7 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Life In Our Lens",
-  description: "Portraits, couples, and engagements shot with intention.",
+  description: "Photos shot with intention.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 // ============================================================

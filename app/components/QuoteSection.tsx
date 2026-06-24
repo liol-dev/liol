@@ -47,7 +47,7 @@ export default function QuoteSection() {
             max-xs: shrinks on narrow phones (<400px, e.g. Pixel 3)
             so the quote doesn't overwhelm small viewports. */}
         <ScrollRevealElement direction="up" duration={0.7}>
-          <blockquote className="font-baskervville font-light max-xs:text-[2rem] text-[2.5rem] md:text-[3.4rem] leading-snug md:leading-snug max-w-7xl">
+          <blockquote className="font-baskervville font-light max-xs:text-[2rem] text-[2.5rem] md:text-[3.4rem] 3xl:text-[4.1rem] leading-snug md:leading-snug max-w-7xl">
             &ldquo;We shoot the people, places, and moments that actually
             mean something with no forced poses, no cookie-cutter
             backdrops. Just real life captured sharp.&rdquo;
@@ -56,7 +56,7 @@ export default function QuoteSection() {
 
         {/* Attribution — back to Montserrat, subdued */}
         <ScrollRevealElement direction="up" distance={24} delay={0.2}>
-          <p className="mt-12 font-montserrat text-base md:text-lg text-liol-subtext tracking-[10%]">
+          <p className="mt-12 font-montserrat text-base md:text-lg 3xl:text-2xl text-liol-subtext tracking-[10%]">
             &mdash; Corey &amp; Ed
           </p>
         </ScrollRevealElement>
