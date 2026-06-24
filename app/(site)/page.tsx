@@ -31,7 +31,7 @@ export default async function Home() {
 
         {/* Subtext — trails the heading */}
         <ScrollRevealElement direction="up" distance={20} delay={0.4}>
-          <p className="mt-6 text-sm md:text-base text-liol-subtext max-w-md leading-relaxed">
+          <p className="mt-6 text-sm md:text-base 3xl:text-xl text-liol-subtext max-w-md leading-relaxed">
             Life in Our Lens — portraits, couples, and engagements shot with intention
           </p>
         </ScrollRevealElement>
@@ -53,7 +53,7 @@ export default async function Home() {
           className="absolute bottom-8"
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-xs tracking-[0.3em] text-liol-subtext">SCROLL</span>
+            <span className="text-xs 3xl:text-sm tracking-[0.3em] text-liol-subtext">SCROLL</span>
             <div className="w-px h-10 bg-liol-subtext" />
           </div>
         </ScrollRevealElement>
